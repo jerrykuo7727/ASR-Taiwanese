@@ -8,8 +8,8 @@
 
 # general configuration
 backend=pytorch
-stage=0        # start from -1 if you need to start from data download
-stop_stage=100
+stage=2        # start from -1 if you need to start from data download
+stop_stage=2
 ngpu=1         # number of gpus ("0" uses cpu, otherwise use gpu)
 debugmode=1
 dumpdir=dump   # directory to dump full features
@@ -67,6 +67,8 @@ if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
     ### But you can utilize Kaldi recipes in most cases
     echo "stage 0: Data preparation"
     rm data dump exp fbank -rf
+
+    echo "prepare and combine datasets"
     python3 local/prepare_data.py
     utils/combine_data.sh data/dev \
         data/all/PL02zpjjwMEjpPibC4Yg5vhxRz6RBZit-P \
@@ -82,6 +84,8 @@ if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
         data/all/PL02zpjjwMEjp0Ck8Mdu9iELED7KGZToIj \
         data/all/PL02zpjjwMEjpgyhaob6MNOfyQ-oi7kLbm \
         data/all/PL02zpjjwMEjqiKILYqcEO7Zi3iYYa_7JI
+
+    echo "preprocess data split"
     for dset in dev test train; do
         utils/utt2spk_to_spk2utt.pl data/$dset/utt2spk > data/$dset/spk2utt
         utils/fix_data_dir.sh data/$dset
@@ -136,30 +140,28 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
     done
 fi
 
-dict=data/lang_char/${train_set}_${bpemode}${nbpe}_units.txt
-bpemodel=data/lang_char/${train_set}_${bpemode}${nbpe}
+dict=data/lang_char/${train_set}_units.txt
 echo "dictionary: ${dict}"
 if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
     ### Task dependent. You have to check non-linguistic symbols used in the corpus.
     echo "stage 2: Dictionary and Json Data Preparation"
     mkdir -p data/lang_char/
+
+    echo "make a dictionary"
     echo "<unk> 1" > ${dict} # <unk> must be 1, 0 will be used for "blank" in CTC
-    cut -f 2- -d" " data/${train_set}/text > data/lang_char/input.txt
-    spm_train --input=data/lang_char/input.txt --vocab_size=${nbpe} --model_type=${bpemode} \
-        --model_prefix=${bpemodel%%.*} --input_sentence_size=100000000
-    spm_encode --model=${bpemodel}.model --output_format=piece < data/lang_char/input.txt | \
-        tr ' ' '\n' | sort | uniq | awk '{print $0 " " NR+1}' >> ${dict}
+    text2token.py -s 1 -n 1 data/${train_set}/text | cut -f 2- -d" " | tr " " "\n" \
+    | sort | uniq | grep -v -e '^\s*$' | awk '{print $0 " " NR+1}' >> ${dict}
     wc -l ${dict}
 
-    # make json labels
-    data2json.sh --feat ${feat_tr_dir}/feats.scp --bpecode ${bpemodel}.model \
-         data/${train_set} ${dict} > ${feat_tr_dir}/data_${bpemode}${nbpe}.json
-    data2json.sh --feat ${feat_dt_dir}/feats.scp --bpecode ${bpemodel}.model \
-         data/${train_dev} ${dict} > ${feat_dt_dir}/data_${bpemode}${nbpe}.json
+    echo "make json labels"
+    data2json.sh --feat ${feat_tr_dir}/feats.scp \
+         data/${train_set} ${dict} > ${feat_tr_dir}/data.json
+    data2json.sh --feat ${feat_dt_dir}/feats.scp \
+         data/${train_dev} ${dict} > ${feat_dt_dir}/data.json
     for rtask in ${recog_set}; do
         feat_recog_dir=${dumpdir}/${rtask}/delta${do_delta}
-        data2json.sh --feat ${feat_recog_dir}/feats.scp --bpecode ${bpemodel}.model \
-            data/${rtask} ${dict} > ${feat_recog_dir}/data_${bpemode}${nbpe}.json
+        data2json.sh --feat ${feat_recog_dir}/feats.scp \
+            data/${rtask} ${dict} > ${feat_recog_dir}/data.json
     done
 fi
 
