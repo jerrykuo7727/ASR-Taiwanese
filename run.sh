@@ -11,6 +11,7 @@ backend=pytorch
 stage=3        # start from -1 if you need to start from data download
 stop_stage=3
 ngpu=1         # number of gpus ("0" uses cpu, otherwise use gpu)
+export CUDA_VISIBLE_DEVICES=1
 debugmode=1
 dumpdir=dump   # directory to dump full features
 N=0            # number of minibatches to be used (mainly for debugging). "0" uses all minibatches.
