@@ -8,8 +8,8 @@
 
 # general configuration
 backend=pytorch
-stage=2        # start from -1 if you need to start from data download
-stop_stage=2
+stage=3        # start from -1 if you need to start from data download
+stop_stage=3
 ngpu=1         # number of gpus ("0" uses cpu, otherwise use gpu)
 debugmode=1
 dumpdir=dump   # directory to dump full features
@@ -27,10 +27,6 @@ lmtag=            # tag for managing LMs
 # decoding parameter
 recog_model=model.acc.best # set a model to be used for decoding: 'model.acc.best' or 'model.loss.best'
 n_average=10
-
-# bpemode (unigram or bpe)
-nbpe=500
-bpemode=unigram
 
 # exp tag
 tag="" # tag for managing experiments.
@@ -95,6 +91,7 @@ if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
     done
 fi
 
+
 feat_tr_dir=${dumpdir}/${train_set}/delta${do_delta}; mkdir -p ${feat_tr_dir}
 feat_dt_dir=${dumpdir}/${train_dev}/delta${do_delta}; mkdir -p ${feat_dt_dir}
 if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
@@ -140,6 +137,7 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
     done
 fi
 
+
 dict=data/lang_char/${train_set}_units.txt
 echo "dictionary: ${dict}"
 if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
@@ -165,25 +163,24 @@ if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
     done
 fi
 
+
 # It takes a few days. If you just want to end-to-end ASR without LM,
 # you can skip this and remove --rnnlm option in the recognition (stage 5)
 if [ -z ${lmtag} ]; then
     lmtag=$(basename ${lm_config%.*})
 fi
-lmexpname=train_rnnlm_${backend}_${lmtag}_${bpemode}${nbpe}
+lmexpname=train_rnnlm_${backend}_${lmtag}
 lmexpdir=exp/${lmexpname}
 mkdir -p ${lmexpdir}
 
 if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
     echo "stage 3: LM Preparation"
-    lmdatadir=data/local/lm_train_${bpemode}${nbpe}
-    if [ ! -e ${lmdatadir} ]; then
-        mkdir -p ${lmdatadir}
-        gunzip -c db/TEDLIUM_release-3/LM/*.en.gz | sed 's/ <\/s>//g' | local/join_suffix.py |\
-	        spm_encode --model=${bpemodel}.model --output_format=piece > ${lmdatadir}/train.txt
-        cut -f 2- -d" " data/${train_dev}/text | spm_encode --model=${bpemodel}.model --output_format=piece \
-	                                                        > ${lmdatadir}/valid.txt
-    fi
+    lmdatadir=data/local/lm_train
+    mkdir -p ${lmdatadir}
+    text2token.py -s 1 -n 1 data/train/text | cut -f 2- -d" " \
+        > ${lmdatadir}/train.txt
+    text2token.py -s 1 -n 1 data/${train_dev}/text | cut -f 2- -d" " \
+        > ${lmdatadir}/valid.txt
 
     ${cuda_cmd} --gpu ${ngpu} ${lmexpdir}/train.log \
         lm_train.py \
@@ -199,6 +196,7 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
         --dict ${dict} \
         --dump-hdf5-path ${lmdatadir}
 fi
+
 
 if [ -z ${tag} ]; then
     expname=${train_set}_${backend}_nbpe${nbpe}_ngpu${ngpu}_$(basename ${train_config%.*})
