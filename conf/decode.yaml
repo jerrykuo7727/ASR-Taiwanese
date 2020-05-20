@@ -1,5 +1,5 @@
 batchsize: 0
-beam-size: 40
+beam-size: 15
 ctc-weight: 0.0
 lm-weight: 0.5
 maxlenratio: 0.0

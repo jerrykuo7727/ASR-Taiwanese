@@ -8,9 +8,9 @@
 
 # general configuration
 backend=pytorch
-stage=4        # start from -1 if you need to start from data download
-stop_stage=4
-ngpu=1         # number of gpus ("0" uses cpu, otherwise use gpu)
+stage=5        # start from -1 if you need to start from data download
+stop_stage=5
+ngpu=0         # number of gpus ("0" uses cpu, otherwise use gpu)
 export CUDA_VISIBLE_DEVICES=2
 debugmode=1
 dumpdir=dump   # directory to dump full features
@@ -27,7 +27,7 @@ lmtag=            # tag for managing LMs
 
 # decoding parameter
 recog_model=model.acc.best # set a model to be used for decoding: 'model.acc.best' or 'model.loss.best'
-n_average=10
+n_average=5
 
 # exp tag
 tag="" # tag for managing experiments.
@@ -251,7 +251,7 @@ if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
         feat_recog_dir=${dumpdir}/${rtask}/delta${do_delta}
 
         # split data
-        splitjson.py --parts ${nj} ${feat_recog_dir}/data_${bpemode}${nbpe}.json
+        splitjson.py --parts ${nj} ${feat_recog_dir}/data.json
 
         #### use CPU for decoding
         ngpu=0
@@ -262,12 +262,12 @@ if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
             --backend ${backend} \
             --debugmode ${debugmode} \
             --verbose ${verbose} \
-            --recog-json ${feat_recog_dir}/split${nj}utt/data_${bpemode}${nbpe}.JOB.json \
+            --recog-json ${feat_recog_dir}/split${nj}utt/data.JOB.json \
             --result-label ${expdir}/${decode_dir}/data.JOB.json \
             --model ${expdir}/results/${recog_model}  \
             --rnnlm ${lmexpdir}/rnnlm.model.best
 
-        score_sclite.sh --bpe ${nbpe} --bpemodel ${bpemodel}.model --wer true ${expdir}/${decode_dir} ${dict}
+        score_sclite.sh ${expdir}/${decode_dir} ${dict}
 
     ) &
     pids+=($!) # store background pids
