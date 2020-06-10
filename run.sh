@@ -9,7 +9,7 @@
 # general configuration
 backend=pytorch
 stage=0        # start from -1 if you need to start from data download
-stop_stage=2
+stop_stage=0
 ngpu=0         # number of gpus ("0" uses cpu, otherwise use gpu)
 export CUDA_VISIBLE_DEVICES=0
 debugmode=1
@@ -27,7 +27,7 @@ lmtag=            # tag for managing LMs
 
 # decoding parameter
 recog_model=model.acc.best # set a model to be used for decoding: 'model.acc.best' or 'model.loss.best'
-n_average=5
+n_average=10
 
 # exp tag
 tag="" # tag for managing experiments.
