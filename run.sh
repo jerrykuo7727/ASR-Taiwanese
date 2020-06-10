@@ -8,10 +8,10 @@
 
 # general configuration
 backend=pytorch
-stage=5        # start from -1 if you need to start from data download
-stop_stage=5
+stage=0        # start from -1 if you need to start from data download
+stop_stage=2
 ngpu=0         # number of gpus ("0" uses cpu, otherwise use gpu)
-export CUDA_VISIBLE_DEVICES=2
+export CUDA_VISIBLE_DEVICES=0
 debugmode=1
 dumpdir=dump   # directory to dump full features
 N=0            # number of minibatches to be used (mainly for debugging). "0" uses all minibatches.
@@ -62,34 +62,24 @@ recog_set="dev test"
 if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
     ### Task dependent. You have to make data the following preparation part by yourself.
     ### But you can utilize Kaldi recipes in most cases
-    echo "stage 0: Data preparation"
+    echo "#################################"
+    echo "    Stage 0: Data Preparation    "
+    echo "#################################"
+    echo `date`
     rm data dump exp fbank -rf
-
-    echo "prepare and combine datasets"
     python3 local/prepare_data.py
-    utils/combine_data.sh data/dev \
-        data/all/PL02zpjjwMEjpPibC4Yg5vhxRz6RBZit-P \
-        data/all/PL02zpjjwMEjr_uUA_1zNmV_uSDrJMhEE5
-    utils/combine_data.sh data/test \
-        data/all/PL02zpjjwMEjqmiQ4baO-ECJwGpqd7C3WM \
-        data/all/PL02zpjjwMEjr5bAwVCU5U6glMqV89E6xs \
-        data/all/PL02zpjjwMEjrO0wgZJaSB0l7OYIOUBNao \
-        data/all/PLc8M1wVJOpHwC1CwJjgOmU1XGzCJDM1qR \
-        data/all/PLc8M1wVJOpHwKDgSCcbUS8KFZWD48Wt-R \
-        data/all/PLc8M1wVJOpHzf_pTd1Qxv6Nby3fBvDo76
-    utils/combine_data.sh data/train \
-        data/all/PL02zpjjwMEjp0Ck8Mdu9iELED7KGZToIj \
-        data/all/PL02zpjjwMEjpgyhaob6MNOfyQ-oi7kLbm \
-        data/all/PL02zpjjwMEjqiKILYqcEO7Zi3iYYa_7JI
+    python3 local/preprocess_data.py
 
-    echo "preprocess data split"
     for dset in dev test train; do
+        dset_data=`ls -d data/all_split/*_${dset}`
+        utils/combine_data.sh data/$dset ${dset_data[*]}
+
         utils/utt2spk_to_spk2utt.pl data/$dset/utt2spk > data/$dset/spk2utt
         utils/fix_data_dir.sh data/$dset
-        sed -i 's/　/\ /g' data/$dset/text   # Replace full-width space to half-width
         mv data/$dset data/$dset.orig
         utils/data/modify_speaker_info.sh --seconds-per-spk-max 180 data/${dset}.orig data/${dset}
     done
+    echo `date`
 fi
 
 
@@ -98,7 +88,10 @@ feat_dt_dir=${dumpdir}/${train_dev}/delta${do_delta}; mkdir -p ${feat_dt_dir}
 if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
     ### Task dependent. You have to design training and dev sets by yourself.
     ### But you can utilize Kaldi recipes in most cases
-    echo "stage 1: Feature Generation"
+    echo "###################################"
+    echo "    Stage 1: Feature Generation    "
+    echo "###################################"
+    echo `date`
     fbankdir=fbank
     # Generate the fbank features; by default 80-dimensional fbanks with pitch on each frame
     for x in test dev train; do
@@ -136,6 +129,7 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
             data/${rtask}/feats.scp data/${train_set}/cmvn.ark exp/dump_feats/recog/${rtask} \
             ${feat_recog_dir}
     done
+    echo `date`
 fi
 
 
@@ -143,7 +137,10 @@ dict=data/lang_char/${train_set}_units.txt
 echo "dictionary: ${dict}"
 if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
     ### Task dependent. You have to check non-linguistic symbols used in the corpus.
-    echo "stage 2: Dictionary and Json Data Preparation"
+    echo "#####################################################"
+    echo "    Stage 2: Dictionary and JSON Data Preparation    "
+    echo "#####################################################"
+    echo `date`
     mkdir -p data/lang_char/
 
     echo "make a dictionary"
@@ -162,6 +159,7 @@ if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
         data2json.sh --feat ${feat_recog_dir}/feats.scp \
             data/${rtask} ${dict} > ${feat_recog_dir}/data.json
     done
+    echo `date`
 fi
 
 
@@ -175,7 +173,10 @@ lmexpdir=exp/${lmexpname}
 mkdir -p ${lmexpdir}
 
 if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
-    echo "stage 3: LM Preparation"
+    echo "###############################"
+    echo "    stage 3: LM Preparation    "
+    echo "###############################"
+    echo `date`
     lmdatadir=data/local/lm_train
     mkdir -p ${lmdatadir}
     text2token.py -s 1 -n 1 data/train/text | cut -f 2- -d" " \
@@ -196,6 +197,7 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
         --resume ${lm_resume} \
         --dict ${dict} \
         --dump-hdf5-path ${lmdatadir}
+    echo `date`
 fi
 
 
@@ -214,7 +216,10 @@ expdir=exp/${expname}
 mkdir -p ${expdir}
 
 if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
-    echo "stage 4: Network Training"
+    echo "#################################"
+    echo "    Stage 4: Network Training    "
+    echo "#################################"
+    echo `date`
     ${cuda_cmd} --gpu ${ngpu} ${expdir}/train.log \
         asr_train.py \
         --ngpu ${ngpu} \
@@ -231,11 +236,15 @@ if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
         --resume ${resume} \
         --train-json ${feat_tr_dir}/data.json \
         --valid-json ${feat_dt_dir}/data.json
+    echo `date`
 fi
 
 
 if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
-    echo "stage 5: Decoding"
+    echo "#########################"
+    echo "    Stage 5: Decoding    "
+    echo "#########################"
+    echo `date`
     nj=32
     if [[ $(get_yaml.py ${train_config} model-module) = *transformer* ]]; then
 	recog_model=model.last${n_average}.avg.best
@@ -274,5 +283,6 @@ if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
     done
     i=0; for pid in "${pids[@]}"; do wait ${pid} || ((++i)); done
     [ ${i} -gt 0 ] && echo "$0: ${i} background jobs are failed." && false
-    echo "Finished"
+    echo "Finished decoding and scoring."
+    echo `date`
 fi

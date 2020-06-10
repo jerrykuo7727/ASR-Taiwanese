@@ -2,14 +2,14 @@ import os
 
 
 if __name__ == '__main__':
+    print('`prepare_data.py` starts running.')
+    
     data_dir = '/home/M10815022/Dataset/Taiwanese_ASR'
-    subdata_ids = sorted(os.listdir(data_dir))  # N=12
+    subdata_ids = sorted(os.listdir(data_dir))
     
     # Training set
-    #for dset, sub_idx in zip(('train', 'dev', 'test'), ((8), 7, 5)):
-    for subdata_id in subdata_ids:
-        
-        print('Preparing subdata %s ...' % subdata_id)
+    for n, subdata_id in enumerate(subdata_ids, start=1):
+        print('Preparing subdata %s... (%d/%d)' % (subdata_id, n, len(subdata_ids)))
         dset_dir = 'data/all/%s/' % subdata_id
         os.makedirs(dset_dir)
         
@@ -18,9 +18,8 @@ if __name__ == '__main__':
         f_wavscp   = open('%s/wav.scp'  % dset_dir, mode='w')
         f_utt2spk  = open('%s/utt2spk'  % dset_dir, mode='w')
     
-        #subdata_id = subdata_ids[sub_idx]
         subdata_dir = os.path.join(data_dir, subdata_id)
-        split_ids = sorted(os.listdir(subdata_dir))  # M=30+
+        split_ids = sorted(os.listdir(subdata_dir))
                
         for i, split_id in enumerate(split_ids, start=1): 
             split_dir = os.path.join(subdata_dir, split_id)
@@ -53,6 +52,6 @@ if __name__ == '__main__':
                 utt_id, _, _, _ = line.split()
                 f_utt2spk.write('%s %s\n' % (utt_id, utt_id))
 
-            print('Processed split: %d/%d\r' % (i, len(split_ids)), end='')
+            print(' > Processed split: %d/%d(%.2f%%)\r' % (i, len(split_ids), 100*i/len(split_ids)), end='')
         print()
     print('`prepare_data.py` finished successfully.')
