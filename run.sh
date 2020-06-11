@@ -6,11 +6,13 @@
 . ./path.sh || exit 1;
 . ./cmd.sh || exit 1;
 
+python3_cmd=python3.6
+
 # general configuration
 backend=pytorch
-stage=3        # start from -1 if you need to start from data download
-stop_stage=3
-ngpu=1         # number of gpus ("0" uses cpu, otherwise use gpu)
+stage=6        # start from -1 if you need to start from data download
+stop_stage=6
+ngpu=0         # number of gpus ("0" uses cpu, otherwise use gpu)
 export CUDA_VISIBLE_DEVICES=0
 debugmode=1
 dumpdir=dump   # directory to dump full features
@@ -27,7 +29,7 @@ lmtag=            # tag for managing LMs
 
 # decoding parameter
 recog_model=model.acc.best # set a model to be used for decoding: 'model.acc.best' or 'model.loss.best'
-n_average=10
+n_average=1
 
 # exp tag
 tag="" # tag for managing experiments.
@@ -67,8 +69,8 @@ if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
     echo "#################################"
     echo `date`
     rm data dump exp fbank -rf
-    python3 local/prepare_data.py
-    python3 local/preprocess_data.py
+    ${python3_cmd} local/prepare_data.py
+    ${python3_cmd} local/preprocess_data.py
 
     for dset in dev test train; do
         dset_data=`ls -d data/all_split/*_${dset}`
@@ -287,5 +289,20 @@ if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
     i=0; for pid in "${pids[@]}"; do wait ${pid} || ((++i)); done
     [ ${i} -gt 0 ] && echo "$0: ${i} background jobs are failed." && false
     echo "Finished decoding and scoring."
+    echo `date`
+fi
+
+
+if [ ${stage} -le 6 ] && [ ${stop_stage} -ge 6 ]; then
+    echo "##############################"
+    echo "    Stage 6: ROUGE Scoring    "
+    echo "##############################"
+    echo `date`
+    for rtask in ${recog_set}; do
+        echo "-------- $rtask set --------"
+        decode_dir=decode_${rtask}_$(basename ${decode_config%.*})
+        ${python3_cmd} local/score_rouge.py ${expdir}/${decode_dir}/data.json
+    done
+    echo "Finished scoring ROUGE metrics."
     echo `date`
 fi
