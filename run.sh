@@ -8,9 +8,9 @@
 
 # general configuration
 backend=pytorch
-stage=0        # start from -1 if you need to start from data download
-stop_stage=2
-ngpu=0         # number of gpus ("0" uses cpu, otherwise use gpu)
+stage=4        # start from -1 if you need to start from data download
+stop_stage=4
+ngpu=1         # number of gpus ("0" uses cpu, otherwise use gpu)
 export CUDA_VISIBLE_DEVICES=0
 debugmode=1
 dumpdir=dump   # directory to dump full features
@@ -183,6 +183,8 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
         > ${lmdatadir}/train.txt
     text2token.py -s 1 -n 1 data/${train_dev}/text | cut -f 2- -d" " \
         > ${lmdatadir}/valid.txt
+    text2token.py -s 1 -n 1 data/test/text | cut -f 2- -d" " \
+        > ${lmdatadir}/test.txt
 
     ${cuda_cmd} --gpu ${ngpu} ${lmexpdir}/train.log \
         lm_train.py \
@@ -194,6 +196,7 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
         --tensorboard-dir tensorboard/${lmexpname} \
         --train-label ${lmdatadir}/train.txt \
         --valid-label ${lmdatadir}/valid.txt \
+        --test-label ${lmdatadir}/test.txt \
         --resume ${lm_resume} \
         --dict ${dict} \
         --dump-hdf5-path ${lmdatadir}
