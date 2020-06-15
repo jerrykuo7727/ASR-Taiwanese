@@ -40,7 +40,7 @@ if __name__ == '__main__':
 
         # Parse `text`
         text_fpath = os.path.join(subdata_dir, 'text')
-        lines = open(text_fpath).readlines()
+        lines = open(text_fpath, encoding='utf-8').readlines()
         for i, line in enumerate(lines, start=1):
             print(' > Parsing `text`: %d/%d(%.2f%%)\r' % (i, len(lines), 100*i/len(lines)), end='')
             utt_id, text = line.strip().split(' ', 1)
@@ -60,7 +60,7 @@ if __name__ == '__main__':
 
         # Parse `segments`
         segments_fpath = os.path.join(subdata_dir, 'segments')
-        lines = open(segments_fpath).readlines()
+        lines = open(segments_fpath, encoding='utf-8').readlines()
         for i, line in enumerate(lines, start=1):
             print(' > Parsing `segments`: %d/%d(%.2f%%)\r' % (i, len(lines), 100*i/len(lines)), end='')
             utt_id, wav_id, segment = line.strip().split(' ', 2)
@@ -78,7 +78,7 @@ if __name__ == '__main__':
 
         # Parse `wav.scp`
         wavscp_fpath = os.path.join(subdata_dir, 'wav.scp')
-        lines = open(wavscp_fpath).readlines()
+        lines = open(wavscp_fpath, encoding='utf-8').readlines()
         for i, line in enumerate(lines, start=1):
             print(' > Parsing `wav.scp`: %d/%d(%.2f%%)\r' % (i, len(lines), 100*i/len(lines)), end='')
             wav_id, wav_path = line.strip().split(' ', 1)
@@ -94,10 +94,10 @@ if __name__ == '__main__':
             save_dir = os.path.join(output_dir, '%s_%s' % (subdata_id, split))
             os.makedirs(save_dir)
             
-            f_text     = open(os.path.join(save_dir, 'text')    , mode='w')
-            f_segments = open(os.path.join(save_dir, 'segments'), mode='w')
-            f_wavscp   = open(os.path.join(save_dir, 'wav.scp') , mode='w')
-            f_utt2spk  = open(os.path.join(save_dir, 'utt2spk') , mode='w')
+            f_text     = open(os.path.join(save_dir, 'text')    , mode='w', encoding='utf-8')
+            f_segments = open(os.path.join(save_dir, 'segments'), mode='w', encoding='utf-8')
+            f_wavscp   = open(os.path.join(save_dir, 'wav.scp') , mode='w', encoding='utf-8')
+            f_utt2spk  = open(os.path.join(save_dir, 'utt2spk') , mode='w', encoding='utf-8')
             
             for utt_id in utt_list_split:
                 text, wav_id, segment = utt2text[utt_id], utt2wav[utt_id], utt2segment[utt_id]

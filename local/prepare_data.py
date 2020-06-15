@@ -13,10 +13,10 @@ if __name__ == '__main__':
         dset_dir = 'data/all/%s/' % subdata_id
         os.makedirs(dset_dir)
         
-        f_text     = open('%s/text'     % dset_dir, mode='w')
-        f_segments = open('%s/segments' % dset_dir, mode='w')
-        f_wavscp   = open('%s/wav.scp'  % dset_dir, mode='w')
-        f_utt2spk  = open('%s/utt2spk'  % dset_dir, mode='w')
+        f_text     = open('%s/text'     % dset_dir, mode='w', encoding='utf-8')
+        f_segments = open('%s/segments' % dset_dir, mode='w', encoding='utf-8')
+        f_wavscp   = open('%s/wav.scp'  % dset_dir, mode='w', encoding='utf-8')
+        f_utt2spk  = open('%s/utt2spk'  % dset_dir, mode='w', encoding='utf-8')
     
         subdata_dir = os.path.join(data_dir, subdata_id)
         split_ids = sorted(os.listdir(subdata_dir))
@@ -27,13 +27,13 @@ if __name__ == '__main__':
 
             # text
             text_fpath = os.path.join(split_dir, 'text')
-            with open(text_fpath) as f:
+            with open(text_fpath, encoding='utf-8') as f:
                 text = f.read()
             f_text.write(text)
 
             # segments
             segments_fpath = os.path.join(split_dir, 'segments')
-            with open(segments_fpath) as f:
+            with open(segments_fpath, encoding='utf-8') as f:
                 segments = f.read()
             f_segments.write(segments)
             
