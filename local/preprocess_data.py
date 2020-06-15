@@ -90,7 +90,7 @@ if __name__ == '__main__':
                 zip(['dev', 'test', 'train'], \
                 [utt_list_dev, utt_list_test, utt_list_train], \
                 [wav_set_dev, wav_set_test, wav_set_train]):
-            print('> Saving files of %s split' % split)
+            print(' > Saving files of %s split' % split)
             save_dir = os.path.join(output_dir, '%s_%s' % (subdata_id, split))
             os.makedirs(save_dir)
             
